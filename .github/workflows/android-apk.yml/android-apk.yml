@@ -1,0 +1,46 @@
+
+name: Build SEXY GIRL APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Extract app source
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -iname '*.zip' -print -quit)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "App ZIP file not found"
+            exit 1
+          fi
+          mkdir app_source
+          unzip "$ZIP_FILE" -d app_source
+
+      - name: Generate platform folders
+        run: |
+          cd app_source
+          flutter create --platforms=android,ios --project-name sexy_girl .
+
+      - name: Install dependencies
+        working-directory: app_source
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: app_source
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sexy-girl-apk
+          path: app_source/build/app/outputs/flutter-apk/app-release.apk
